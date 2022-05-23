@@ -18,7 +18,7 @@ int main()
     int H = 512;
     int n_rays = 32;
     int scene_type = 2;
-    bool bvh = true;
+    bool bvh = false;
     bool antialiasing = false;
     bool fresnel = false;
     bool indirect_lightning = false;
