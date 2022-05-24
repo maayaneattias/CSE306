@@ -1,15 +1,20 @@
-#include "auxiliary.h" // header in local directory
-#include <iostream>  // header in standard library
-#include <cmath>     // header for math functions
+#include "auxiliary.h" 
+#include <iostream> 
+#include <cmath>   
 #include <random>
 #include <algorithm>
 #include <list>
+#include <stdio.h>
+#include <string.h>
 
 static std::default_random_engine engine(10); // random seed = 10
 static std::uniform_real_distribution<double> uniform(0., 1.);
 
-/* Vectors */
+/*-----------------------------------------------------------------------------------------------*/
 
+/*                          Vector class                                                         */
+
+/*-----------------------------------------------------------------------------------------------*/
 Vector::Vector(double x, double y, double z)
 {
     coords[0] = x;
@@ -215,10 +220,11 @@ Vector random_cos(Vector &N)
     return (T1 * x + T2 * y + N * z).normalize();
 }
 
-/* Vectors */
+/*-----------------------------------------------------------------------------------------------*/
 
-/* Sphere */
+/*                          Sphere class                                                         */
 
+/*-----------------------------------------------------------------------------------------------*/
 Sphere::Sphere(Vector C, Vector albedo, double R, bool mirror, bool transparent, double refraction_index)
 {
     this->C = C;
@@ -270,21 +276,23 @@ Intersection Sphere::intersect(Ray &r)
     return intersection;
 }
 
-/* Sphere */
 
-/* Ray */
+/*-----------------------------------------------------------------------------------------------*/
+
+/*                          Ray class                                                         */
+
+/*-----------------------------------------------------------------------------------------------*/
 Ray::Ray(Vector O, Vector u, double refraction_index)
 {
     this->O = O;
     this->u = u;
     this->refraction_index = refraction_index;
 }
-/* Ray */
 
 
 /*-----------------------------------------------------------------------------------------------*/
 
-/*                          Utilities                                                            */
+/*                          HELPERS                                                            */
 
 /*-----------------------------------------------------------------------------------------------*/
 
@@ -313,6 +321,7 @@ Ray center_ray(Vector &camera_pos, int W, int H, double fov, double refraction_i
     Ray ray = Ray(camera_pos, (r - camera_pos).normalize(), refraction_index);
     return ray;
 }
+
 
 /*-----------------------------------------------------------------------------------------------*/
 
@@ -889,3 +898,5 @@ void TriangleMesh::readOBJ(const char *obj)
     }
     fclose(f);
 }
+
+

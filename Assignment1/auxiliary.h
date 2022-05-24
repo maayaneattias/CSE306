@@ -57,16 +57,6 @@ public:
     double refraction_index;
 };
 
-class Bbox {
-public:
-    Bbox();
-    Bbox(Vector &b_min,Vector &b_max);
-    Vector b_min;
-    Vector b_max;
-    bool intersect(Ray &r,double &inter_distance);
-    Vector compute_diag();
-};
-
 class Geometry{
 public:
     virtual Intersection intersect(Ray &r) = 0;
@@ -84,16 +74,26 @@ public:
     double R;
 };
 
+
+class Bbox {
+public:
+    Bbox();
+    Bbox(Vector &b_min,Vector &b_max);
+    Vector b_min;
+    Vector b_max;
+    bool intersect(Ray &r,double &inter_distance);
+    Vector compute_diag();
+};
+
 class Node{
-    public:
-        
-        int starting_triangle;
-        int ending_triangle;
-        Bbox bbox;
-        Node* child_left;
-        Node* child_right;
-        bool has_children;
-        Node(){}
+public:
+    int starting_triangle;
+    int ending_triangle;
+    Bbox bbox;
+    Node* child_left;
+    Node* child_right;
+    bool has_children;
+    Node(){}
 };
 
 class TriangleIndices{
@@ -124,7 +124,3 @@ public:
     void order_BVH(Node* node,int starting_triangle, int ending_triangle);
     Vector compute_barycenter(int triangle_indice);
 };
-
-
-
-

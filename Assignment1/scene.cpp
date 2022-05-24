@@ -1,10 +1,9 @@
-#include "scene.h" // header in local directory
-#include <iostream>  // header in standard library
-#include <cmath>     // header for math functions
+#include "scene.h" 
+#include <iostream> 
+#include <cmath>    
 #include <random>
 #include <algorithm>
 #include <list>
-
 
 Scene::Scene(double I, Vector &S, double refraction_index, bool fresnel, bool bvh, int scene_type)
 {
@@ -48,8 +47,10 @@ Scene::Scene(double I, Vector &S, double refraction_index, bool fresnel, bool bv
     else if (scene_type == 2)
     {
         double scaling_factor = 0.6; //can be changed
-        Vector translation = Vector(0,-10,0);  //can be changed
-        TriangleMesh *meshes = new TriangleMesh(Vector(1, 1, 1), scaling_factor, translation);
+        //Vector albedo = Vector(0.3, 0.2, 0.25);  
+        Vector albedo =  Vector(1, 1, 1) ;
+        Vector translation = Vector(0,-10,0);
+        TriangleMesh *meshes = new TriangleMesh(albedo, scaling_factor, translation);
         meshes->readOBJ("cat/cat.obj");
         for (int i = 0; i < meshes->vertices.size(); i++)
         {

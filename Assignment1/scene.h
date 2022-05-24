@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+//#include "trianglemesh.h"
 #include "auxiliary.cpp"
 
 class Scene{
