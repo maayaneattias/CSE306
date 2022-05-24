@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <vector>
 
+//NOTE: this is a first implementation for Lab6. I followed the pseudo code given in the lecture notes but I didn't have time to fully test it
 
 /*
 ----------------------------VECTOR CLASS-----------------------------------------
