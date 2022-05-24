@@ -51,14 +51,14 @@ Scene::Scene(double I, Vector &S, double refraction_index, bool fresnel, bool bv
         Vector albedo =  Vector(1, 1, 1) ;
         Vector translation = Vector(0,-10,0);
         TriangleMesh *meshes = new TriangleMesh(albedo, scaling_factor, translation);
-        meshes->readOBJ("cat/cat.obj");
+        meshes->readOBJ("cat.obj");
         for (int i = 0; i < meshes->vertices.size(); i++)
         {
             meshes->vertices[i] = meshes->vertices[i] * scaling_factor;
             meshes->vertices[i] = meshes->vertices[i] + translation;
         }
         if (bvh)
-            meshes->order_BVH(meshes->root, 0, meshes->indices.size());
+            meshes->performingBVH(meshes->root, 0, meshes->indices.size());
         else //bounding box
         {
             meshes->root->bbox = meshes->compute_bbox(0, meshes->indices.size());
@@ -108,66 +108,64 @@ Vector Scene::get_color(Ray &ray, int ray_depth, bool indirect_lightning)
 
     else if (geometries[intersection.id]->transparent)
     {
-        bool is_exiting = false;
-        Vector original_N = intersection.N;
+        bool exit_permited = false;
         if (ray.u.dot(intersection.N) > 0)
         {
             intersection.N = intersection.N * (-1);
-            is_exiting = true;
+            exit_permited = true;
         }
-        double n2;
-        if (is_exiting)
+        double n_index_bis;
+        if (exit_permited)
         {
-            n2 = refraction_index;
+            n_index_bis = refraction_index;
         }
         else
         {
-            n2 = geometries[intersection.id]->refraction_index;
+            n_index_bis = geometries[intersection.id]->refraction_index;
         }
 
-        //fresnel
-        double k0 = (ray.refraction_index - n2) * (ray.refraction_index - n2) / ((ray.refraction_index + n2) * (ray.refraction_index + n2));
-        double N_dot_u = abs(intersection.N.dot(ray.u));
-        double R = k0 + (1 - k0) * (1 - N_dot_u) * (1 - N_dot_u) * (1 - N_dot_u) * (1 - N_dot_u) * (1 - N_dot_u);
+        double kzero = (ray.refraction_index - n_index_bis) * (ray.refraction_index - n_index_bis) / ((ray.refraction_index + n_index_bis) * (ray.refraction_index + n_index_bis));
+        double dotproductNU = abs(intersection.N.dot(ray.u));
+        double R = kzero + (1 - kzero) * (1 - dotproductNU) * (1 - dotproductNU) * (1 - dotproductNU) * (1 - dotproductNU) * (1 - dotproductNU);
         double u = uniform(engine);
-        if (fresnel && u < R)
-        { //reflection
+        if (fresnel==true && u < R) // we need to include reflection
+        { 
             Ray reflected_ray = Ray(intersection.P + intersection.N * 1e-3, ray.u - intersection.N * (2 * intersection.N.dot(ray.u)), refraction_index);
             return get_color(reflected_ray, ray_depth - 1, indirect_lightning);
         }
-
         else
         {
-            double dot_u_n = ray.u.dot(intersection.N);
-            double refraction = ray.refraction_index / n2;
-            double x = 1 - refraction * refraction * (1 - dot_u_n * dot_u_n);
-            if (x > 0)
-            { //refraction
-                Vector w_t = (ray.u - intersection.N * dot_u_n) * refraction;
-                Vector w_n = intersection.N * (-1) * sqrt(x);
-                Vector w = w_t + w_n;
-                Ray transparent_ray = Ray(intersection.P - intersection.N * 1e-3, w, n2);
-                return get_color(transparent_ray, ray_depth - 1, indirect_lightning);
+            double dotproductUN = ray.u.dot(intersection.N);//dotproduct other way around
+            double refraction = ray.refraction_index / n_index_bis;
+            double x = 1 - (refraction * refraction * (1 - dotproductUN * dotproductUN));
+            if (x<=0){
+                //reflection
+                Ray refraction_tot = Ray(intersection.P + intersection.N * 1e-3, ray.u - intersection.N * (2 * intersection.N.dot(ray.u)), n_index_bis);
+                return get_color(refraction_tot, ray_depth - 1, indirect_lightning);
             }
-            else
-            { //reflection
-                Ray total_internal_refraction = Ray(intersection.P + intersection.N * 1e-3, ray.u - intersection.N * (2 * intersection.N.dot(ray.u)), n2);
-                return get_color(total_internal_refraction, ray_depth - 1, indirect_lightning);
+            else{
+                //refraction using formula in lecture notes
+                Vector wprime = (ray.u - intersection.N * dotproductUN) * refraction;
+                Vector wprimeprime = intersection.N * (-1) * sqrt(x);
+                Vector w = wprime + wprimeprime;
+                Ray rayforrefraction = Ray(intersection.P - intersection.N * 1e-3, w, n_index_bis);
+                return get_color(rayforrefraction, ray_depth - 1, indirect_lightning);
             }
         }
     }
     else
     {
-        Vector p_s = this->S - intersection.P;
-        double d = p_s.norm();
-        Vector w = p_s / d;
-        Ray r = Ray(intersection.P + intersection.N * 1e-3, w, refraction_index);
-        Intersection visibility = this->intersect(r);
-        double hidden = not(visibility.is_intersect && visibility.t < d);
-        Vector L0 = geometries[intersection.id]->albedo * intersection.N.dot(w) * this->I * hidden / (4 * M_PI * d * M_PI * d);
+        Vector p_vector = this->S - intersection.P;
+        double p_vector_norm = p_vector.norm();
+        Vector normalised_vector = p_vector / p_vector_norm;
+        Ray ray = Ray(intersection.P + intersection.N * 1e-3, normalised_vector, refraction_index);
+        Intersection ray_intersected = this->intersect(ray);
+        double hidden = not(ray_intersected.is_intersect && ray_intersected.t < p_vector_norm);
+        Vector L0 = geometries[intersection.id]->albedo * intersection.N.dot(normalised_vector) * this->I * hidden / (4 * M_PI * p_vector_norm * M_PI * p_vector_norm);
         if (indirect_lightning)
         {
-            Ray random_ray = Ray(intersection.P + intersection.N * 1e-3, random_cos(intersection.N), refraction_index);
+            //adding LO as in the formula
+            Ray random_ray = Ray(intersection.P + intersection.N * 1e-3, randomize_cross_product(intersection.N), refraction_index);
             L0 += get_color(random_ray, ray_depth - 1, indirect_lightning) * geometries[intersection.id]->albedo;
         }
         return L0;

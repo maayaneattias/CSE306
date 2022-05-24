@@ -10,19 +10,14 @@ public:
     Vector &operator-=(const Vector &b);
     Vector &operator*=(const Vector &b);
     Vector &operator/=(const Vector &b);
-
     Vector operator+(const Vector &a);
     Vector operator+(const double a);
-
     Vector operator-(const Vector &a);
     Vector operator-(const double a);
-
     Vector operator*(const Vector &a);
     Vector operator*(const double a);
-
     Vector operator/(const Vector &a);
     Vector operator/(const double a);
-
     const double &operator[](int i) const;
     double &operator[](int i);
 
@@ -35,7 +30,6 @@ public:
     int get_longest();
     double norm();
     Vector normalize();
-    void print();
 
 private:
     double coords[3];
@@ -97,12 +91,13 @@ public:
 };
 
 class TriangleIndices{
+//NOTE: I got inspired by the implementation in the link on Moodle
 public:
     TriangleIndices(int vtxi = -1, int vtxj = -1, int vtxk = -1, int ni = -1, int nj = -1, int nk = -1, int uvi = -1, int uvj = -1, int uvk = -1, int group = -1, bool added = false) : vtxi(vtxi), vtxj(vtxj), vtxk(vtxk), uvi(uvi), uvj(uvj), uvk(uvk), ni(ni), nj(nj), nk(nk), group(group){};
-    int vtxi, vtxj, vtxk; // indices within the vertex coordinates array
-    int uvi, uvj, uvk;    // indices within the uv coordinates array
-    int ni, nj, nk;       // indices within the normals array
-    int group;            // face group
+    int vtxi, vtxj, vtxk; // for vertex coordinates 
+    int uvi, uvj, uvk;    // for uv coordinates 
+    int ni, nj, nk;       // for normals 
+    int group;            // for face group
 };
 
 class TriangleMesh : public Geometry{
@@ -111,7 +106,6 @@ public:
     ~TriangleMesh() {}
     TriangleMesh(Vector albedo, double scaling_factor, Vector translation);
     void readOBJ(const char *obj);
-    bool intersect_bbox(Ray &r);
     std::vector<TriangleIndices> indices;
     std::vector<Vector> vertices;
     std::vector<Vector> normals;
@@ -121,6 +115,6 @@ public:
     Vector translation;
     Bbox compute_bbox(int starting_triangle, int ending_triangle);
     Node* root;
-    void order_BVH(Node* node,int starting_triangle, int ending_triangle);
-    Vector compute_barycenter(int triangle_indice);
+    void performingBVH(Node* node,int starting_triangle, int ending_triangle);
+    Vector find_barycenter(int triangle_indice);
 };
