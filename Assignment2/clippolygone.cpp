@@ -7,8 +7,7 @@
 #include <list>
 #include <stdio.h>
 #include <vector>
-
-//NOTE: this is a first implementation for Lab6. I followed the pseudo code given in the lecture notes but I didn't have time to fully test it
+#include "liblbfgs-master/include/lbfgs.h"
 
 /*
 ----------------------------VECTOR CLASS-----------------------------------------
@@ -138,7 +137,7 @@ bool is_inside(Vector &vertex, Edge &clipEdge)
 ---------------------------- ALGORITHM CLIPPOLYGON -----------------------------------------
 Sutherland-Hodgman by p.84 of lecture notes
 */
-Polygon clipPolygon(Polygon &subjectPolygon, Polygon &clipPolygone)
+Polygon clipPolygonfunction(Polygon &subjectPolygon, Polygon &clipPolygone)
 {
     int prevIndex;
     for (int i = 0; i < clipPolygone.edges.size(); i++)
@@ -171,4 +170,22 @@ Polygon clipPolygon(Polygon &subjectPolygon, Polygon &clipPolygone)
         subjectPolygon = outPolygone;
     }
     return subjectPolygon;
+}
+
+ 
+// saves a static svg file. The polygon vertices are supposed to be in the range [0..1], and a canvas of size 1000x1000 is created
+void save_svg(const std::vector<Polygon> &polygons, std::string filename, std::string fillcol = "none") {
+        FILE* f = fopen(filename.c_str(), "w+"); 
+        fprintf(f, "<svg xmlns = \"http://www.w3.org/2000/svg\" width = \"1000\" height = \"1000\">\n");
+        for (int i=0; i<polygons.size(); i++) {
+            fprintf(f, "<g>\n");
+            fprintf(f, "<polygon points = \""); 
+            for (int j = 0; j < polygons[i].vertices.size(); j++) {
+                fprintf(f, "%3.3f, %3.3f ", (polygons[i].vertices[j][0] * 1000), (1000 - polygons[i].vertices[j][1] * 1000));
+            }
+            fprintf(f, "\"\nfill = \"%s\" stroke = \"black\"/>\n", fillcol.c_str());
+            fprintf(f, "</g>\n");
+        }
+        fprintf(f, "</svg>\n");
+        fclose(f);
 }
