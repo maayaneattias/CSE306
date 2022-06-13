@@ -28,6 +28,8 @@ public:
     double &operator[](int i);
 
     double dot(const Vector &a);
+    double norm();
+    Vector normalize();
 
 private:
     double coords[3];

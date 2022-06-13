@@ -95,6 +95,14 @@ double Vector::dot(const Vector &a){
     return a[0] * coords[0] + a[1] * coords[1];
 }
 
+double Vector::norm(){
+    return sqrt(dot(*this));
+}
+
+Vector Vector::normalize(){
+    return *this / norm();
+}
+
 
 /*
 ----------------------------EDGE CLASS-----------------------------------------
@@ -114,11 +122,11 @@ Polygon::Polygon(){
 /*
 ---------------------------- HELPERS -----------------------------------------
 */
-Vector intersect(Vector &prevVertex, Vector &curVertex, Edge &clipEdge){
+Vector intersect(Vector &prevVertex, Vector &tempVector, Edge &clipEdge){
     Vector N = Vector(clipEdge.point_b[1] - clipEdge.point_a[1], clipEdge.point_a[0] - clipEdge.point_b[0]);
-    Vector ab = curVertex - prevVertex;
-    double t = N.dot(clipEdge.point_a - prevVertex) / N.dot(ab);
-    Vector P = prevVertex + ab * t;
+    Vector diff = tempVector - prevVertex;
+    double t = N.dot(clipEdge.point_a - prevVertex) / N.dot(diff);
+    Vector P = prevVertex + diff * t;
     if (t < 0 || t > 1)
         return Vector(0., 0.);
     return P;
@@ -139,27 +147,27 @@ Sutherland-Hodgman by p.84 of lecture notes
 */
 Polygon clipPolygonfunction(Polygon &subjectPolygon, Polygon &clipPolygone)
 {
-    int prevIndex;
+    int formerIndex;
     for (int i = 0; i < clipPolygone.edges.size(); i++)
     {
         Edge clipEdge = clipPolygone.edges[i];
         Polygon outPolygone = Polygon();
         for (int j = 0; j < subjectPolygon.vertices.size(); j++)
         {
-            Vector curVertex = subjectPolygon.vertices[j];
+            Vector tempVector = subjectPolygon.vertices[j];
             if (j > 0)
-                prevIndex = j - 1;
+                formerIndex = j - 1;
             else
-                prevIndex = subjectPolygon.vertices.size() - 1;
-            Vector prevVertex = subjectPolygon.vertices[prevIndex];
-            Vector intersection = intersect(prevVertex, curVertex, clipEdge);
-            if (is_inside(curVertex, clipEdge))
+                formerIndex = subjectPolygon.vertices.size() - 1;
+            Vector prevVertex = subjectPolygon.vertices[formerIndex];
+            Vector intersection = intersect(prevVertex, tempVector, clipEdge);
+            if (is_inside(tempVector, clipEdge))
             {
                 if (!is_inside(prevVertex, clipEdge))
                 {
                     outPolygone.vertices.push_back(intersection);
                 }
-                outPolygone.vertices.push_back(curVertex);
+                outPolygone.vertices.push_back(tempVector);
             }
             else if (is_inside(prevVertex, clipEdge))
             {
@@ -170,6 +178,75 @@ Polygon clipPolygonfunction(Polygon &subjectPolygon, Polygon &clipPolygone)
         subjectPolygon = outPolygone;
     }
     return subjectPolygon;
+}
+
+
+/*
+---------------------------- VORONOI DIAGRAM -----------------------------------------
+*/
+
+Polygon clipPolygonLine(Polygon &subjectPolygon, Vector M, Vector vectorIJ)
+{
+    int formerIndex;
+    Polygon resultPoly = Polygon();
+    Vector vectorJI = vectorIJ * (-1);
+#define inside(X) (X - M).dot(vectorIJ)
+
+    for (int j = 0; j < subjectPolygon.vertices.size(); j++)
+    {
+        if (j<=0){
+            formerIndex = subjectPolygon.vertices.size() - 1;
+        }
+        else{
+            formerIndex = j - 1;
+        }
+        Vector tempVector = subjectPolygon.vertices[j];
+        Vector prevVertex = subjectPolygon.vertices[formerIndex];
+        Vector diff = tempVector - prevVertex;
+        double t = vectorJI.dot(M - prevVertex) / vectorJI.dot(diff);
+        Vector intersection = (t >= 0 && t <= 1) ? prevVertex + diff * t : Vector(0., 0.);
+        if (inside(tempVector) < 0)
+        {
+            if (!(inside(prevVertex) < 0))
+            {
+                resultPoly.vertices.push_back(intersection);
+            }
+            resultPoly.vertices.push_back(tempVector);
+        }
+        else if (inside(prevVertex) < 0)
+        {
+
+            resultPoly.vertices.push_back(intersection);
+        }
+    }
+    return resultPoly;
+}
+
+std::vector<Polygon> voronoi(Polygon &clipPolygon, std::vector<Vector> &points, const double *weights)
+{
+    Vector firstPoint, secondPoint, middlePoint, vectorIJ;
+    double firstWeight, secondWeight;
+    std::vector<Polygon> res;
+    for (int i = 0; i < points.size(); i++)
+    {
+        firstWeight = weights[i];
+        firstPoint = points[i];
+        Polygon resultPoly = clipPolygon;
+        for (int j = 0; j < points.size(); j++)
+        {
+            secondPoint = points[j];
+            secondWeight = weights[j];
+            if (i == j){
+                continue;
+            }
+            middlePoint = (firstPoint + secondPoint) * 0.5;
+            vectorIJ = (secondPoint - firstPoint);
+            middlePoint = middlePoint + vectorIJ * (firstWeight - secondWeight) / (2 * pow(vectorIJ.norm(), 2.));
+            resultPoly = clipPolygonLine(resultPoly, middlePoint, vectorIJ);
+        }
+        res.push_back(resultPoly);
+    }
+    return res;
 }
 
  
